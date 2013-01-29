@@ -1,0 +1,59 @@
+import webapp2
+import random
+import cgi
+
+from google.appengine.api import users
+from google.appengine.ext import db
+
+class Data(db.Model):
+	longurl=db.StringProperty(multiline=True)
+	countalpha = db.StringProperty()
+	countdigit = db.StringProperty()
+class MainPage(webapp2.RequestHandler):
+	def get(self):
+		self.response.out.write("""
+          	<html>
+            	<body>
+		<br/><br/><br/><br/><br/><br/><br/><br/>
+		<center>
+		Please Enter the Long url
+              	<form >
+                <div><textarea name="longurl" rows="3" cols="100"></textarea></div>
+                <div><input type="submit" value="Append"></div>
+              	</form></center>""")
+		longurl=self.request.get('longurl')
+		l = len(longurl)
+		counta=0
+		countd=0
+		for i in longurl:		
+			if i.isalpha():
+				counta +=1 
+			if i.isdigit():
+				countd +=1
+		countalpha = str(counta)
+		countdigit = str(countd)
+		if longurl != "":
+			obj=Data(db.Key.from_path('Table',longurl))
+			obj.longurl=longurl
+			obj.countalpha=countalpha
+			self.response.out.write("""<br>Digit<br>""")
+			obj.countdigit=countdigit
+			getdata=db.GqlQuery("SELECT * FROM Data WHERE ANCESTOR IS :a",a=db.Key.from_path('Table',longurl))
+			cnt =0
+			for i in getdata:
+				cnt=cnt+1
+			if cnt==0:
+				obj.put()
+			
+			getdata1=db.GqlQuery("SELECT * FROM Data WHERE ANCESTOR IS :a",a=db.Key.from_path('Table',longurl))
+			
+			for i in getdata1:
+				self.response.out.write(i.longurl)
+				self.response.out.write("""<br>Alpha<br>""")
+				self.response.out.write(i.countalpha)
+				self.response.out.write("""<br>Digit<br>""")
+				self.response.out.write(i.countdigit)
+				self.response.out.write("""<br></center>""")
+			self.response.out.write("""</body></html>""")			
+		
+app=webapp2.WSGIApplication([('/.*',MainPage)],debug=True)		
